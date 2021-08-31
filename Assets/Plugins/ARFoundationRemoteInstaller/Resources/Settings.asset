@@ -41,7 +41,7 @@ MonoBehaviour:
     isLegacyInputManagerEnabled: 0
     isNewInputSystemEnabled: 0
   debugSettings:
-    logStartupErrors: 1
+    logStartupErrors: 0
     showTelepathyLogs: 0
     showTelepathyWarningsAndErrors: 1
     printCompanionAppIPsToConsole: 0

@@ -1,10 +1,3 @@
-// AR_FOUNDATION_EDITOR_REMOTE: fix for Editor applied
-#if UNITY_EDITOR
-    #define IS_EDITOR
-#endif
-#undef UNITY_EDITOR
-using ARFoundationRemote.Runtime;
-// AR_FOUNDATION_EDITOR_REMOTE***
 using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine;
@@ -16,12 +9,6 @@ using UnityEngine.XR.ARKit;
 
 namespace UnityEngine.XR.ARFoundation.Samples
 {
-    // AR_FOUNDATION_EDITOR_REMOTE: fix for Editor applied
-    #if IS_EDITOR
-    using ARKitFaceSubsystem = ARFoundationRemote.Runtime.FaceSubsystem;
-    #endif
-    // AR_FOUNDATION_EDITOR_REMOTE***
-
     /// <summary>
     /// Populates the action unit coefficients for an <see cref="ARFace"/>.
     /// </summary>
@@ -70,7 +57,6 @@ namespace UnityEngine.XR.ARFoundation.Samples
         {
             m_Face = GetComponent<ARFace>();
             CreateFeatureBlendMapping();
-            Debug.Log("Awake: "+ m_Face);
         }
 
         void CreateFeatureBlendMapping()
@@ -80,9 +66,7 @@ namespace UnityEngine.XR.ARFoundation.Samples
                 return;
             }
 
-
 #if UNITY_IOS && !UNITY_EDITOR
-            //Debug.Log("CreateFeatureBlendMapping()");
             const string strPrefix = "blendShape2.";
             m_FaceArkitBlendShapeIndexMap = new Dictionary<ARKitBlendShapeLocation, int>();
 
@@ -143,15 +127,13 @@ namespace UnityEngine.XR.ARFoundation.Samples
 
         void SetVisible(bool visible)
         {
-            //Debug.Log(" SetVisible");
-           if (skinnedMeshRenderer == null) return;
+            if (skinnedMeshRenderer == null) return;
 
             skinnedMeshRenderer.enabled = visible;
         }
 
         void UpdateVisibility()
         {
-            //Debug.Log("UpdateVisibility()");
             var visible =
                 enabled &&
                 (m_Face.trackingState == TrackingState.Tracking) &&
@@ -163,11 +145,9 @@ namespace UnityEngine.XR.ARFoundation.Samples
         void OnEnable()
         {
 #if UNITY_IOS && !UNITY_EDITOR
-            Debug.Log("OnEnable()");
             var faceManager = FindObjectOfType<ARFaceManager>();
             if (faceManager != null)
             {
-                //Debug.Log("OnEnable()_FaceManager");
                 m_ARKitFaceSubsystem = (ARKitFaceSubsystem)faceManager.subsystem;
             }
 #endif
@@ -189,7 +169,6 @@ namespace UnityEngine.XR.ARFoundation.Samples
 
         void OnUpdated(ARFaceUpdatedEventArgs eventArgs)
         {
-            Debug.Log("OnUpdated");
             UpdateVisibility();
             UpdateFaceFeatures();
         }
