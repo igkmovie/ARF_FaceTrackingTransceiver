@@ -1,20 +1,13 @@
-﻿// AR_FOUNDATION_EDITOR_REMOTE: fix for Editor applied
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using Unity.Collections;
 using UnityEngine.XR.ARSubsystems;
-//#if (UNITY_IOS || UNITY_EDITOR) && ARFOUNDATION_REMOTE_ENABLE_IOS_BLENDSHAPES
 using UnityEngine.XR.ARKit;
-//#endif
 using OscJack;
-
 
 namespace UnityEngine.XR.ARFoundation.Samples
 {
-//#if UNITY_EDITOR
-    using ARKitFaceSubsystem = ARFoundationRemote.Runtime.FaceSubsystem;
-//#endif
 
-    
+
     /// <summary>
     /// Populates the action unit coefficients for an <see cref="ARFace"/>.
     /// </summary>
@@ -23,11 +16,13 @@ namespace UnityEngine.XR.ARFoundation.Samples
     /// this component will generate the blend shape coefficients from the underlying <c>ARFace</c>.
     ///
     /// </remarks>
+
+    //ARKitBlendShapeVisualizerを改変して作成
     [RequireComponent(typeof(ARFace))]
     public class BlendShapeTransmitter : MonoBehaviour
     {
-        OscClient client = new OscClient("サーバのIPアドレス", 9000);
-
+        OscClient client;
+        public string ip = "";
         [SerializeField]
         float m_CoefficientScale = 100.0f;
 
@@ -40,7 +35,7 @@ namespace UnityEngine.XR.ARFoundation.Samples
         [SerializeField]
         SkinnedMeshRenderer m_SkinnedMeshRenderer;
 
-
+        GameObject faceObj;
 
         public SkinnedMeshRenderer skinnedMeshRenderer
         {
@@ -55,18 +50,18 @@ namespace UnityEngine.XR.ARFoundation.Samples
             }
         }
 
-//#if (UNITY_IOS || UNITY_EDITOR) && ARFOUNDATION_REMOTE_ENABLE_IOS_BLENDSHAPES
         ARKitFaceSubsystem m_ARKitFaceSubsystem;
 
         Dictionary<ARKitBlendShapeLocation, int> m_FaceArkitBlendShapeIndexMap;
-//#endif
 
         ARFace m_Face;
 
         void Awake()
         {
+            client = new OscClient(ip, 9000);
             m_Face = GetComponent<ARFace>();
             Debug.Log(m_Face);
+            faceObj = this.gameObject;
             CreateFeatureBlendMapping();
         }
 
@@ -77,7 +72,6 @@ namespace UnityEngine.XR.ARFoundation.Samples
                 return;
             }
 
-//#if (UNITY_IOS || UNITY_EDITOR) && ARFOUNDATION_REMOTE_ENABLE_IOS_BLENDSHAPES
             const string strPrefix = "blendShape2.";
             m_FaceArkitBlendShapeIndexMap = new Dictionary<ARKitBlendShapeLocation, int>();
 
@@ -133,7 +127,6 @@ namespace UnityEngine.XR.ARFoundation.Samples
             m_FaceArkitBlendShapeIndexMap[ARKitBlendShapeLocation.NoseSneerLeft       ]   = skinnedMeshRenderer.sharedMesh.GetBlendShapeIndex(strPrefix + "noseSneer_L");
             m_FaceArkitBlendShapeIndexMap[ARKitBlendShapeLocation.NoseSneerRight      ]   = skinnedMeshRenderer.sharedMesh.GetBlendShapeIndex(strPrefix + "noseSneer_R");
             m_FaceArkitBlendShapeIndexMap[ARKitBlendShapeLocation.TongueOut           ]   = skinnedMeshRenderer.sharedMesh.GetBlendShapeIndex(strPrefix + "tongueOut");
-//#endif
         }
 
         void SetVisible(bool visible)
@@ -155,13 +148,13 @@ namespace UnityEngine.XR.ARFoundation.Samples
 
         void OnEnable()
         {
-//#if (UNITY_IOS || UNITY_EDITOR) && ARFOUNDATION_REMOTE_ENABLE_IOS_BLENDSHAPES
+
             var faceManager = FindObjectOfType<ARFaceManager>();
             if (faceManager != null)
             {
                 m_ARKitFaceSubsystem = (ARKitFaceSubsystem)faceManager.subsystem;
             }
-//#endif
+
             UpdateVisibility();
             m_Face.updated += OnUpdated;
             ARSession.stateChanged += OnSystemStateChanged;
@@ -191,7 +184,7 @@ namespace UnityEngine.XR.ARFoundation.Samples
                 return;
             }
             BlendshapeModels blendshapeModels = new BlendshapeModels();
-//#if (UNITY_IOS || UNITY_EDITOR) && ARFOUNDATION_REMOTE_ENABLE_IOS_BLENDSHAPES
+
             using (var blendShapes = m_ARKitFaceSubsystem.GetBlendShapeCoefficients(m_Face.trackableId, Allocator.Temp))
             {
                 foreach (var featureCoefficient in blendShapes)
@@ -209,10 +202,12 @@ namespace UnityEngine.XR.ARFoundation.Samples
                     blendshape.coefficient = featureCoefficient.coefficient;
                     blendshapeModels.shapes.Add(blendshape);
                 }
+                //頭の回転についてはとりあえずの実装という感じ。OscServer.cs側を含めて考える必要あり
+                blendshapeModels.headPosRot.rot = faceObj.transform.rotation;
                 var json = JsonUtility.ToJson(blendshapeModels);
                 client.Send("/unity", json);
             }
-//#endif
+
         }
     }
 }

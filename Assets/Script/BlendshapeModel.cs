@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+
 [Serializable]
 public class BlendshapeModels
 {
@@ -18,5 +19,5 @@ public class BlendshapeModel
 public class HeadPosRot
 {
     public Vector3 pos;
-    public Vector4 rot;
+    public Quaternion rot;
 }
