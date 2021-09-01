@@ -8,8 +8,8 @@ public class OscServer : MonoBehaviour
     public GameObject faceObj;
     public SkinnedMeshRenderer skinnedMeshRenderer;
     Dictionary<string, int> m_FaceArkitBlendShapeIndexMap;
-    public GameObject headbone;
-    public GameObject neck;
+    public GameObject headbone;　//モデルの頭ボーンをアタッチする。
+    public GameObject neck;　//モデルの首ボーンをアタッチする
 
     // Start is called before the first frame update
     public void OnMess(string value)
@@ -27,8 +27,12 @@ public class OscServer : MonoBehaviour
                 //Debug.Log(val);
                 skinnedMeshRenderer.SetBlendShapeWeight(val, x.coefficient * 100);
                 var rot = blendshapeModels.headPosRot.rot.eulerAngles;
-                neck.transform.localRotation = Quaternion.Euler(-rot.y, -rot.z, rot.x);
-                //neck.transform.localRotation = Quaternion.Euler((-rot.z), (rot.y + 90 + 8), (rot.x - 90));
+                // モデルの首ボーンを回転させてるが自作モデルようなのでうまく行かない場合はそれぞれでやって下さい
+                if(neck != null)
+                {
+                    neck.transform.localRotation = Quaternion.Euler(-rot.y, -rot.z, rot.x);
+                }
+                
                 return x;
             }).ToList();
 
@@ -45,6 +49,7 @@ public class OscServer : MonoBehaviour
             return;
         }
         const string strPrefix = "";
+        //BlenderのAddon、FaceItで自動作成されるブレンドシャイプ名になってます。自作モデルとブレンドシャイプ名が違う場合は修正の必要があります。
         m_FaceArkitBlendShapeIndexMap = new Dictionary<string, int>();
         m_FaceArkitBlendShapeIndexMap["BrowDownLeft"] = skinnedMeshRenderer.sharedMesh.GetBlendShapeIndex(strPrefix + "browDownLeft");
         m_FaceArkitBlendShapeIndexMap["BrowDownRight"] = skinnedMeshRenderer.sharedMesh.GetBlendShapeIndex(strPrefix + "browDownRight");

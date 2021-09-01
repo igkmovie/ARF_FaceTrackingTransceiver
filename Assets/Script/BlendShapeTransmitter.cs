@@ -25,6 +25,9 @@ namespace UnityEngine.XR.ARFoundation.Samples
         public string ip = "";
         [SerializeField]
         float m_CoefficientScale = 100.0f;
+        [SerializeField]
+        int port = 9000;
+
 
         public float coefficientScale
         {
@@ -58,7 +61,7 @@ namespace UnityEngine.XR.ARFoundation.Samples
 
         void Awake()
         {
-            client = new OscClient(ip, 9000);
+            client = new OscClient(ip, port);
             m_Face = GetComponent<ARFace>();
             Debug.Log(m_Face);
             faceObj = this.gameObject;
