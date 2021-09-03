@@ -22,11 +22,12 @@ namespace UnityEngine.XR.ARFoundation.Samples
     public class BlendShapeTransmitter : MonoBehaviour
     {
         OscClient client;
-        public string ip = "";
+        //public string ip = "";
         [SerializeField]
         float m_CoefficientScale = 100.0f;
         [SerializeField]
         int port = 9000;
+        bool flg = false;
 
 
         public float coefficientScale
@@ -61,11 +62,16 @@ namespace UnityEngine.XR.ARFoundation.Samples
 
         void Awake()
         {
-            client = new OscClient(ip, port);
+            
             m_Face = GetComponent<ARFace>();
             Debug.Log(m_Face);
             faceObj = this.gameObject;
             CreateFeatureBlendMapping();
+        }
+        public void SetClient(string ip)
+        {
+            client = new OscClient(ip, port);
+            flg = true;
         }
 
         void CreateFeatureBlendMapping()
@@ -200,15 +206,23 @@ namespace UnityEngine.XR.ARFoundation.Samples
                             skinnedMeshRenderer.SetBlendShapeWeight(mappedBlendShapeIndex, featureCoefficient.coefficient * coefficientScale);
                         }
                     }
-                    BlendshapeModel blendshape = new BlendshapeModel();
-                    blendshape.Location = featureCoefficient.blendShapeLocation.ToString();
-                    blendshape.coefficient = featureCoefficient.coefficient;
-                    blendshapeModels.shapes.Add(blendshape);
+                    if (flg)
+                    {
+                        BlendshapeModel blendshape = new BlendshapeModel();
+                        blendshape.Location = featureCoefficient.blendShapeLocation.ToString();
+                        blendshape.coefficient = featureCoefficient.coefficient;
+                        blendshapeModels.shapes.Add(blendshape);
+                    }
+
                 }
-                //頭の回転についてはとりあえずの実装という感じ。OscServer.cs側を含めて考える必要あり
-                blendshapeModels.headPosRot.rot = faceObj.transform.rotation;
-                var json = JsonUtility.ToJson(blendshapeModels);
-                client.Send("/unity", json);
+                if (flg)
+                {
+                    //頭の回転についてはとりあえずの実装という感じ。OscServer.cs側を含めて考える必要あり
+                    blendshapeModels.headPosRot.rot = faceObj.transform.rotation;
+                    var json = JsonUtility.ToJson(blendshapeModels);
+                    client.Send("/unity", json);
+                }
+
             }
 
         }
