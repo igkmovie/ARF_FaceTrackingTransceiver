@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.Linq;
+using UniRx.Triggers;
+using UniRx;
+using System;       
+using System.IO;
+using Cysharp.Threading.Tasks;
 
 public class OscServer : MonoBehaviour
 {
@@ -11,12 +16,26 @@ public class OscServer : MonoBehaviour
     public GameObject headbone;　//モデルの頭ボーンをアタッチする。
     public GameObject neck;　//モデルの首ボーンをアタッチする
 
+    BlendshapeRec _blendshapeRec = new BlendshapeRec();
+    bool rec = false;
+    bool isLoad = false;
     // Start is called before the first frame update
     public void OnMess(string value)
     {
+        //ブレンドシェイプをJsonファイルから再生している時は動かさない
+        if (isLoad)
+        {
+            return;
+        }
 
         var blendshapeModels = JsonUtility.FromJson<BlendshapeModels>(value);
-        Debug.Log(blendshapeModels.headPosRot.rot);
+
+        if (rec)
+        {
+            _blendshapeRec.data.Add(blendshapeModels);
+        }
+
+//        Debug.Log(blendshapeModels.headPosRot.rot);
         var blendshapes = blendshapeModels.shapes;
         blendshapes
             .Where(x => m_FaceArkitBlendShapeIndexMap.TryGetValue(x.Location, out int mappedBlendShapeIndex))
@@ -39,7 +58,98 @@ public class OscServer : MonoBehaviour
     }
     private void Awake()
     {
+        var path = Application.persistentDataPath + "/blendshapes";
+        var filename = "face";
+        //Rキーを押すとブレンドシャイプの記録開始
         CreateFeatureBlendMapping();
+        this.UpdateAsObservable()
+            .Where(x => Input.GetKeyDown(KeyCode.R))
+            .Subscribe(async x =>
+            {
+                if (!rec)
+                {
+                    rec = true;
+                    
+                }
+                else
+                {
+                    rec = false;
+                    string json = JsonUtility.ToJson(_blendshapeRec);
+                    
+                    
+                    DirectoryInfo di = new DirectoryInfo(path);
+                    if (!Directory.Exists(Application.persistentDataPath + "/blendshapes"))
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    var fi = new FileInfo(path + "/" + filename + ".json");
+                    
+                    await UniTask.Run(() =>
+                    {
+                        File.WriteAllText(path + "/" + filename + ".json", json);
+                    });
+                    Debug.Log("Save Completed");
+                }
+                Debug.Log("rec: " + rec);
+            });
+        //スペースキーを押すと再生開始。
+        var t = 0;
+        BlendshapeRec list = new BlendshapeRec();
+        this.UpdateAsObservable()
+            .Where(x => Input.GetKeyDown(KeyCode.Space))
+            .Subscribe(async x =>
+            {
+                if (isLoad)
+                {
+                    isLoad = false;
+                    Debug.Log("loadStop; ");
+
+                }
+                else
+                {
+                    
+                    Debug.Log("load: ");
+                    string data;
+                    data = File.ReadAllText(path + "/" + filename + ".json");
+                    list = JsonUtility.FromJson<BlendshapeRec>(data);
+                    Debug.Log("blendshapeFrame"+list.data.Count) ;
+                    isLoad = true;
+
+                }
+            });
+
+        this.UpdateAsObservable().Where(x => isLoad)
+            .Subscribe(_ =>
+            {
+                var blendshapes = list.data[t].shapes;
+                blendshapes
+                    .Where(x => m_FaceArkitBlendShapeIndexMap.TryGetValue(x.Location, out int mappedBlendShapeIndex))
+                    .Where(x => m_FaceArkitBlendShapeIndexMap[x.Location] >= 0)
+                    .Select(x =>
+                    {
+                        var val = m_FaceArkitBlendShapeIndexMap[x.Location];
+                //Debug.Log(val);
+                skinnedMeshRenderer.SetBlendShapeWeight(val, x.coefficient * 100);
+                        var rot = list.data[t].headPosRot.rot.eulerAngles;
+                        // モデルの首ボーンを回転させてるが自作モデルようなのでうまく行かない場合はそれぞれでやって下さい
+                        if (neck != null)
+                        {
+                            neck.transform.localRotation = Quaternion.Euler(-rot.y, -rot.z, rot.x);
+                        }
+                        Debug.Log(rot.x);
+                        return x;
+                    }).ToList();
+
+                t++;
+                if(t == list.data.Count-2)
+                {
+                    t = 0;
+                }
+                
+            });
+
+
+
     }
     void CreateFeatureBlendMapping()
     {
