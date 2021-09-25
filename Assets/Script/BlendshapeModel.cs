@@ -2,6 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[Serializable]
+public class BlendshapeRec
+{
+    public List<BlendshapeModels> data = new List<BlendshapeModels>();
+}
 
 [Serializable]
 public class BlendshapeModels
